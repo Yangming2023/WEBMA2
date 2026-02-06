@@ -8,4 +8,11 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.static('public')); // This serves your HTML automatically!
 
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
+
+app.listen(PORT, () => {
+  console.log("Server listening on port", PORT);
+});
 
