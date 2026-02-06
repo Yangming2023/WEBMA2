@@ -1,0 +1,111 @@
+table {
+  border-collapse: separate;
+  border-spacing: 6px;
+  margin-top: 16px;
+}
+
+td {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: none;
+  background: #eee;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+}
+
+td:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.controls button,
+.controls select,
+.controls input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 300px;
+  height: 35px;
+  font-size: 14px;
+}
+
+.controls button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+  width: 200px;
+  height: 35px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.controls button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-container {
+  background: #f9fafb;
+  padding: 24px 28px;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+}
+
+
+.grass { background-color: #9be39b; }
+.forest { background-color: #2f7d32; color: white; }
+.house { background-color: #ffcc80; }
+.mine { background-color: #b0bec5; }
+
+#you-lost {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 6rem;
+  font-weight: 900;
+  color: red;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none; /* click-through */
+}
+
+/* Bounce animation */
+@keyframes bounceIn {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.show-you-lost {
+  animation: bounceIn 0.7s cubic-bezier(.34,1.56,.64,1) forwards;
+}

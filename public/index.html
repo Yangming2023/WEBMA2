@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Town Building Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="you-lost">YOU LOST</div>
+
+<div class="game-container">
+    <h1>Town Building Game</h1>
+
+    <p>Click <a href="data.html">here</a> to see the data</p>
+
+    <div class="controls">
+        <p>Please enter your username</p>
+        <input type="text" id="userid" placeholder="johnny joes">
+        <button onclick="updateUsername()">Confirm</button>
+    </div>
+
+    <p id="tutorial_p">Hello player, you're working for an urban development company. Your company just bought a
+        piece of land that you can develop but you need to make a certain amount of money each
+        year to justify your existance to your boss. You can blah blah blah. But beware each 
+        year there will be a random event that can be good or bad so prepare for the unexpected!
+    </p>
+    
+    <div class="controls">
+        <p>select a difficulty</p>
+        <select id="difficulty">
+            <option value="easy">Easy(target amount increases slower, random events are better)</option>
+            <option value="medium">Medium(everything's average)</option>
+            <option value="hard">Hard(target amount increases faster, random events are worse)</option>
+        </select>
+        <button onclick="changeDifficulty()">Confirm</button>
+    </div>
+
+    <p>Money: <span id="money">20</span></p>
+    <p>Houses: <span id="houses">1</span> | Mines: <span id="mines">1</span></p>
+    <p>Target money(amount of money needed at the end of the turn after income is added) <span id="target">0</span></p>
+
+    <select id="buildType">
+        <option value="house">Build House (10)</option>
+        <option value="mine">Build Mine (10)</option>
+        <option value="chop">Chop Forest (5)</option>
+    </select>
+
+    <div class="controls">
+        <input type="text" id="coord" placeholder="A1, B2, C5">
+        <button onclick="doAction()">Confirm</button>
+        <button onclick="endTurn()">End Turn</button>
+    </div>
+
+    <table>
+        <tbody id="grid"></tbody>
+    </table>
+</div>
+
+<script>
+    function getCookie(name) {
+        const cookies = document.cookie.split("; ");
+        for (let c of cookies) {
+            const [key, value] = c.split("=");
+            if (key === name) return value;
+        }
+        return null;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const darkMode = urlParams.get("dark");
+    const difficulty_url = urlParams.get("difficulty");
+
+    if (darkMode === "true") {
+        document.getElementsByClassName("game-container")[0].style.background = "black";
+        document.body.style.color = "white";
+    }
+
+    const GRIDSIZE = 10;
+
+    let money = 20;
+    let houses = 1;
+    let mines = 1;
+    let max_increase = 3;
+
+    if (difficulty_url) {
+        const difficutly_selector = document.getElementById("difficulty");
+        difficutly_selector.value = difficulty_url;
+        changeDifficulty();
+    }
+
+    function loadDifficulty() {
+        const diff = getCookie("difficulty");
+        if (!diff) {
+            return ;
+        }
+        if (diff == "hard") {
+            max_increase = 10;
+        } else if (diff == "medium") {
+            max_increase = 6;
+        } else {
+            max_increase = 3;
+        }
+        document.getElementById("difficulty").value = diff;
+    }
+
+    function changeDifficulty() {
+        const difficutly_selector = document.getElementById("difficulty");
+        const diff = difficutly_selector.value;
+        document.cookie = `difficulty=${diff}; path=/`;
+        loadDifficulty();
+    }
+
+    function loadUsername() {
+        const username = getCookie("userid");
+        if (!username) {
+            return ;
+        }
+        const tutorial = document.getElementById("tutorial_p");
+        tutorial_p.textContent = `Hello ${username}, you're working for an urban development company. Your company just bought a
+    piece of land that you can develop but you need to make a certain amount of money each
+    year to justify your existance to your boss. You can blah blah blah. But beware each 
+    year there will be a random event that can be good or bad so prepare for the unexpected!`;
+    }
+
+    function updateUsername() {
+        const id_input = document.getElementById("userid");
+        document.cookie = `userid=${id_input.value}; path=/`;
+        loadUsername();
+    }
+
+    loadDifficulty();
+    loadUsername();
+
+    // Tile types: grass, forest, house, mine
+    let grid = [];
+
+    function initGrid() {
+        for (let i = 0; i < GRIDSIZE; i++) {
+            let row = [];
+            for (let j = 0; j < GRIDSIZE; j++) {
+                row.push("forest");
+            }
+            grid.push(row);
+        }
+
+        grid[0][0] = "house";
+        grid[0][1] = "mine";
+    }
+
+    function renderGrid() {
+        const table = document.getElementById("grid");
+        table.innerHTML = "";
+
+        for (let i = 0; i < GRIDSIZE; i++) {
+            let tr = document.createElement("tr");
+
+            for (let j = 0; j < GRIDSIZE; j++) {
+                let td = document.createElement("td");
+                td.className = grid[i][j];
+
+                let image = document.createElement("img");
+                if (grid[i][j] === "house") {
+                    td.textContent = "H";
+                    image.src = "images/Farmhouse-removebg-preview.png";
+                } else if (grid[i][j] === "mine") {
+                    td.textContent = "M";
+                    image.src = "images/mine-removebg-preview.png";
+                } else if (grid[i][j] === "forest") {
+                    td.textContent = "F";
+                    image.src = "images/tree-removebg-preview.png";
+                } else if (grid[i][j] === "grass") {
+                    td.textContent = "G";
+                    image.src = "images/grass-removebg-preview.png";
+                }
+                
+                image.width = 50;
+                image.height = 50;
+                td.appendChild(image);
+                tr.appendChild(td);
+            }
+            table.appendChild(tr);
+        }
+
+        document.getElementById("money").textContent = money;
+        document.getElementById("houses").textContent = houses;
+        document.getElementById("mines").textContent = mines;
+    }
+
+    function parseCoord(coord) {
+        coord = coord.toUpperCase();
+        const row = coord.charCodeAt(0) - 65;
+        const col = parseInt(coord.slice(1)) - 1;
+
+        if (row < 0 || row >= GRIDSIZE || col < 0 || col >= GRIDSIZE) {
+            return null;
+        }
+        return { row, col };
+    }
+
+    function doAction() {
+        const type = document.getElementById("buildType").value;
+        const coord = document.getElementById("coord").value;
+        const pos = parseCoord(coord);
+
+        if (!pos) {
+            alert("Invalid coordinate!");
+            return;
+        }
+
+        const tile = grid[pos.row][pos.col];
+
+        if (type === "chop") {
+            if (money < 5) return alert("not enough money");
+            money -= 5;
+            if (tile === "forest") {
+                grid[pos.row][pos.col] = "grass";
+            } else {
+                alert("That tile is not forest.");
+            }
+        }
+
+        if (type === "house") {
+            if (money < 10) return alert("Not enough money!");
+            if (tile !== "grass") return alert("You can only build on grass.");
+
+            grid[pos.row][pos.col] = "house";
+            money -= 10;
+            houses++;
+        }
+
+        if (type === "mine") {
+            if (money < 10) return alert("Not enough money!");
+            if (tile !== "grass") return alert("You can only build on grass.");
+            if (mines >= houses) return alert("You need more houses to build more mines.");
+
+            grid[pos.row][pos.col] = "mine";
+            money -= 10;
+            mines++;
+        }
+
+        renderGrid();
+    }
+
+    function endTurn() {
+        money += mines * 10;
+        const rent = document.getElementById("target");
+        if (money < rent.textContent) {
+            loseGame();
+        }
+        let increase = parseInt((max_increase + 1) * Math.random());
+        rent.textContent = parseInt(rent.textContent) + increase;
+        alert("Turn ended! You earned " + (mines * 10) + " money.");
+        renderGrid();
+    }
+
+    function loseGame() {
+        const text = document.getElementById("you-lost");
+
+        text.classList.remove("show-you-lost");
+
+        text.classList.add("show-you-lost");
+    }
+
+    initGrid();
+    renderGrid();
+</script>
+
+</body>
+</html>

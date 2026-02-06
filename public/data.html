@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data</title>
+</head>
+<body>
+    <h1>This page shows all the behind the scenes data</h1>
+    <p><a href="index.html">Back to the game</a></p>
+
+    <p id="money">Money: error getting the data</p>
+    <table id="buildings"></table>
+
+    <script>
+        document.getElementById('messageForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const dataToSend = {
+                name: document.getElementById('userName').value,
+                message: document.getElementById('userMessage').value
+            };
+
+            if (!dataToSend.name || dataToSend.message.length < 5) {
+                console.error("400 Bad Request");
+                alert('Invalid input');
+                return ;
+            }
+
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSend)
+            });
+        });
+    </script>
+</body>
+</html>
