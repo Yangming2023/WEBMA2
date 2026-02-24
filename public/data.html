@@ -1,38 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Game Data (Backend)</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Game Backend Data</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#111;
+            color:white;
+            padding:20px;
+        }
+
+        pre{
+            background:black;
+            padding:15px;
+            border-radius:8px;
+            overflow:auto;
+        }
+
+        button{
+            padding:8px 15px;
+            margin-bottom:15px;
+            cursor:pointer;
+        }
+    </style>
 </head>
-<body>
 
-<div class="data-container">
-  <h3>Raw JSON from Backend:</h3>
-  <pre id="output"></pre>
-</div>
+    <body>
 
-<script>
-  async function loadData() {
-    try {
-      const res = await fetch("/api/game");
-      if (!res.ok) {
-        document.getElementById("output").textContent =
-          "Failed to load data. Status: " + res.status;
-        return;
-      }
+        <h1>Backend Game Data</h1>
 
-      const data = await res.json();
-      document.getElementById("output").textContent =
-        JSON.stringify(data, null, 2);
-    } catch (err) {
-      document.getElementById("output").textContent =
-        "Error fetching data: " + err.message;
-    }
-  }
+        <button onclick="loadData()">Refresh</button>
+        <button onclick="autoRefresh()">Auto Refresh</button>
 
-  loadData();
-</script>
+        <p id="output"></p>
 
-</body>
+        <script>
+
+            let interval = null;
+
+            async function loadData(){
+
+                const response = await fetch("/api/game");
+                const data = await response.json();
+
+                document.getElementById("output")
+                    .textContent =
+                    JSON.stringify(data, null, 2);
+            }
+
+
+            function autoRefresh(){
+
+                if(interval){
+                    clearInterval(interval);
+                    interval = null;
+                    alert("Auto refresh OFF");
+                    return;
+                }
+
+                interval = setInterval(loadData, 1000);
+                alert("Auto refresh ON");
+            }
+
+            loadData();
+
+        </script>
+
+    </body>
 </html>

@@ -7,182 +7,174 @@
 </head>
 <body>
 
-<div id="you-lost">YOU LOST</div>
+    <div id="you-lost">YOU LOST</div>
 
-<div class="game-container">
-    <h1>Town Building Game</h1>
+    <div class="game-container">
+        <h1>Town Building Game</h1>
 
-    <p>Click <a href="data.html">here</a> to see the data</p>
+        <p>Click <a href="data.html">here</a> to see the data</p>
 
-    <div class="controls">
-        <p>Please enter your username</p>
-        <input type="text" id="userid" placeholder="johnny joes">
-        <button onclick="updateUsername()">Confirm</button>
-    </div>
+        <div class="controls">
+            <p>Please enter your username</p>
+            <input type="text" id="userid" placeholder="johnny joes">
+            <button onclick="updateUsername()">Confirm</button>
+        </div>
 
-    <p id="tutorial_p">Hello player, you're working for an urban development company. Your company just bought a
-        piece of land that you can develop but you need to make a certain amount of money each
-        year to justify your existance to your boss. You can blah blah blah. But beware each 
-        year there will be a random event that can be good or bad so prepare for the unexpected!
-    </p>
-    
-    <div class="controls">
-        <p>select a difficulty</p>
-        <select id="difficulty">
-            <option value="easy">Easy(target amount increases slower, random events are better)</option>
-            <option value="medium">Medium(everything's average)</option>
-            <option value="hard">Hard(target amount increases faster, random events are worse)</option>
+        <p id="tutorial_p">Hello player, you're working for an urban development company. Your company just bought a
+            piece of land that you can develop but you need to make a certain amount of money each
+            year to justify your existance to your boss. You can blah blah blah. But beware each 
+            year there will be a random event that can be good or bad so prepare for the unexpected!
+        </p>
+        
+        <div class="controls">
+            <p>select a difficulty</p>
+            <select id="difficulty">
+                <option value="easy">Easy(target amount increases slower, random events are better)</option>
+                <option value="medium">Medium(everything's average)</option>
+                <option value="hard">Hard(target amount increases faster, random events are worse)</option>
+            </select>
+            <button onclick="changeDifficulty()">Confirm</button>
+        </div>
+
+        <p>Money: <span id="money">20</span></p>
+        <p>Houses: <span id="houses">1</span> | Mines: <span id="mines">1</span></p>
+        <p>Target money(amount of money needed at the end of the turn after income is added) <span id="target">0</span></p>
+
+        <select id="buildType">
+            <option value="house">Build House (10)</option>
+            <option value="mine">Build Mine (10)</option>
+            <option value="chop">Chop Forest (5)</option>
         </select>
-        <button onclick="changeDifficulty()">Confirm</button>
+
+        <div class="controls">
+            <input type="text" id="coord" placeholder="A1, B2, C5">
+            <button onclick="doAction()">Confirm</button>
+            <button onclick="endTurn()">End Turn</button>
+        </div>
+
+        <table>
+            <tbody id="grid"></tbody>
+        </table>
     </div>
 
-    <p>Money: <span id="money">20</span></p>
-    <p>Houses: <span id="houses">1</span> | Mines: <span id="mines">1</span></p>
-    <p>Target money(amount of money needed at the end of the turn after income is added) <span id="target">0</span></p>
+    <script>
 
-    <select id="buildType">
-        <option value="house">Build House (10)</option>
-        <option value="mine">Build Mine (10)</option>
-        <option value="chop">Chop Forest (5)</option>
-    </select>
+        const GRIDSIZE = 10;
+        let grid = [];
 
-    <div class="controls">
-        <input type="text" id="coord" placeholder="A1, B2, C5">
-        <button onclick="doAction()">Confirm</button>
-        <button onclick="endTurn()">End Turn</button>
-    </div>
+        async function loadGame() {
+            const res = await fetch("/api/game");
+            const game = await res.json();
 
-    <table>
-        <tbody id="grid"></tbody>
-    </table>
-</div>
+            grid = game.grid;
 
-<script>
-const GRIDSIZE = 10;
-
-let gameState = {
-    money: 20,
-    houses: 1,
-    mines: 1,
-    target: 0,
-    grid: []
-};
-
-let max_increase = 3;
-
-function initGrid() {
-    gameState.grid = [];
-    for (let i = 0; i < GRIDSIZE; i++) {
-        let row = [];
-        for (let j = 0; j < GRIDSIZE; j++) row.push("forest");
-        gameState.grid.push(row);
-    }
-    gameState.grid[0][0] = "house";
-    gameState.grid[0][1] = "mine";
-}
-
-function renderGrid() {
-    const table = document.getElementById("grid");
-    table.innerHTML = "";
-    for (let i = 0; i < GRIDSIZE; i++) {
-        let tr = document.createElement("tr");
-        for (let j = 0; j < GRIDSIZE; j++) {
-            let td = document.createElement("td");
-            td.className = gameState.grid[i][j];
-            td.textContent = gameState.grid[i][j][0].toUpperCase();
-            tr.appendChild(td);
+            document.getElementById("money").textContent = game.money;
+            document.getElementById("houses").textContent = game.houses;
+            document.getElementById("mines").textContent = game.mines;
         }
-        table.appendChild(tr);
-    }
-    document.getElementById("money").textContent = gameState.money;
-    document.getElementById("houses").textContent = gameState.houses;
-    document.getElementById("mines").textContent = gameState.mines;
-    document.getElementById("target").textContent = gameState.target;
-}
 
-function parseCoord(coord) {
-    coord = coord.toUpperCase();
-    const row = coord.charCodeAt(0) - 65;
-    const col = parseInt(coord.slice(1)) - 1;
-    if (row < 0 || row >= GRIDSIZE || col < 0 || col >= GRIDSIZE) return null;
-    return { row, col };
-}
 
-async function saveGame() {
-    await fetch("/api/game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(gameState)
-    });
-}
+        async function renderGrid() {
 
-async function loadGame() {
-    const res = await fetch("/api/game");
-    const data = await res.json();
-    if (data) {
-        gameState = data;
-    } else {
-        initGrid();
-    }
-    renderGrid();
-}
+            await loadGame();
 
-async function resetGame() {
-    await fetch("/api/game", { method: "DELETE" });
-    gameState = { money: 20, houses: 1, mines: 1, target: 0, grid: [] };
-    initGrid();
-    renderGrid();
-}
+            const table = document.getElementById("grid");
+            table.innerHTML = "";
 
-function doAction() {
-    const type = document.getElementById("buildType").value;
-    const coord = document.getElementById("coord").value;
-    const pos = parseCoord(coord);
-    if (!pos) return alert("Invalid coordinate!");
+            for (let i = 0; i < GRIDSIZE; i++) {
 
-    const tile = gameState.grid[pos.row][pos.col];
+                let tr = document.createElement("tr");
 
-    if (type === "chop") {
-        if (gameState.money < 5) return alert("Not enough money");
-        if (tile !== "forest") return alert("That tile is not forest.");
-        gameState.money -= 5;
-        gameState.grid[pos.row][pos.col] = "grass";
-    }
+                for (let j = 0; j < GRIDSIZE; j++) {
 
-    if (type === "house") {
-        if (gameState.money < 10) return alert("Not enough money!");
-        if (tile !== "grass") return alert("You can only build on grass.");
-        gameState.money -= 10;
-        gameState.houses++;
-        gameState.grid[pos.row][pos.col] = "house";
-    }
+                    let td = document.createElement("td");
+                    td.className = grid[i][j];
 
-    if (type === "mine") {
-        if (gameState.money < 10) return alert("Not enough money!");
-        if (tile !== "grass") return alert("You can only build on grass.");
-        if (gameState.mines >= gameState.houses) return alert("You need more houses.");
-        gameState.money -= 10;
-        gameState.mines++;
-        gameState.grid[pos.row][pos.col] = "mine";
-    }
+                    let img = document.createElement("img");
 
-    saveGame();
-    renderGrid();
-}
+                    if (grid[i][j] === "house")
+                        img.src = "images/Farmhouse-removebg-preview.png";
 
-function endTurn() {
-    gameState.money += gameState.mines * 10;
-    gameState.target += Math.floor(Math.random() * (max_increase + 1));
-    if (gameState.money < gameState.target) {
-        document.getElementById("you-lost").classList.add("show-you-lost");
-    }
-    saveGame();
-    renderGrid();
-}
+                    if (grid[i][j] === "mine")
+                        img.src = "images/mine-removebg-preview.png";
 
-initGrid();
-loadGame();
-</script>
+                    if (grid[i][j] === "forest")
+                        img.src = "images/tree-removebg-preview.png";
+
+                    if (grid[i][j] === "grass")
+                        img.src = "images/grass-removebg-preview.png";
+
+                    img.width = 50;
+                    img.height = 50;
+
+                    td.appendChild(img);
+                    tr.appendChild(td);
+                }
+
+                table.appendChild(tr);
+            }
+        }
+
+
+        function parseCoord(coord){
+            coord = coord.toUpperCase();
+            return {
+                row: coord.charCodeAt(0)-65,
+                col: parseInt(coord.slice(1))-1
+            };
+        }
+
+
+        async function doAction(){
+
+            const type =
+                document.getElementById("buildType").value;
+
+            const pos = parseCoord(
+                document.getElementById("coord").value
+            );
+
+            const res = await fetch("/api/action",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    type,
+                    row:pos.row,
+                    col:pos.col
+                })
+            });
+
+            const data = await res.json();
+
+            if(!res.ok){
+                alert(data.error);
+                return;
+            }
+
+            renderGrid();
+        }
+
+
+        async function endTurn(){
+
+            const res = await fetch("/api/endTurn",{
+                method:"POST"
+            });
+
+            const data = await res.json();
+
+            if(data.lost){
+                loseGame();
+            }
+
+            renderGrid();
+        }
+
+        renderGrid();
+
+    </script>
 
 </body>
 </html>
